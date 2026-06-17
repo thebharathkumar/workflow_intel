@@ -1,0 +1,59 @@
+# Full stack: backend + frontend + PostgreSQL + OpenTelemetry Collector.
+#   docker compose up --build
+# Frontend → http://localhost:8080   ·   API/docs → http://localhost:8000/docs
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: wi
+      POSTGRES_PASSWORD: wi
+      POSTGRES_DB: wi
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wi"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  otel-collector:
+    image: otel/opentelemetry-collector:0.110.0
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./docker/otel-collector-config.yaml:/etc/otelcol/config.yaml:ro
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    environment:
+      WI_ENVIRONMENT: production
+      WI_DATABASE_URL: postgresql+asyncpg://wi:wi@db:5432/wi
+      WI_CORS_ORIGINS: '["http://localhost:8080"]'
+      WI_OTEL_ENABLED: "true"
+      WI_OTEL_ENDPOINT: "otel-collector:4317"
+      # Optional LLM layer:
+      # WI_LLM_ENABLED: "true"
+      # ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
