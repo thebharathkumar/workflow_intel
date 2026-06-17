@@ -1,0 +1,1 @@
+"""Optional LangGraph execution adapter."""
