@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-slate-950 text-slate-200 antialiased;
+}
+
+/* React Flow theming tweaks for dark mode */
+.react-flow__node {
+  @apply rounded-lg border border-slate-700 bg-slate-800 text-slate-100 shadow;
+  font-size: 12px;
+}
+.react-flow__edge-text {
+  fill: #94a3b8;
+  font-size: 10px;
+}
+.react-flow__attribution {
+  display: none;
+}
