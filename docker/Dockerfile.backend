@@ -1,0 +1,28 @@
+# Backend image — build from the repository root:
+#   docker build -f docker/Dockerfile.backend -t workflow-intel-backend .
+FROM python:3.11-slim AS base
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1
+
+WORKDIR /app
+
+COPY backend/pyproject.toml ./
+COPY backend/workflow_intel ./workflow_intel
+
+RUN pip install --upgrade pip \
+    && pip install ".[postgres,otel]" gunicorn
+
+# Run as a non-root user.
+RUN useradd --create-home --uid 10001 app && chown -R app /app
+USER app
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+    CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/v1/health').status==200 else 1)"
+
+CMD ["gunicorn", "workflow_intel.api.app:app", \
+     "-k", "uvicorn.workers.UvicornWorker", \
+     "-b", "0.0.0.0:8000", "-w", "2", "--timeout", "120"]

@@ -1,0 +1,24 @@
+# Minimal OpenTelemetry Collector config for local/dev.
+# Point the backend at it with WI_OTEL_ENABLED=true and WI_OTEL_ENDPOINT=otel-collector:4317.
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch: {}
+
+exporters:
+  # Print spans to the collector log (swap for tempo/otlphttp to Grafana, or Phoenix, in prod).
+  debug:
+    verbosity: detailed
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug]
